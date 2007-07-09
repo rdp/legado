@@ -2,12 +2,15 @@
 
 require 'fox16'
 require 'fox16/colors'
+require 'tabBook'
+require 'sand'
 
 include Fox
 
 TYGER = <<END_OF_POEM
 Family Tree
 END_OF_POEM
+
 
 class MDITestWindow  < FXMainWindow
 
@@ -27,7 +30,10 @@ class MDITestWindow  < FXMainWindow
     uplevelicon = getIcon("goslogo.jpg")
     paletteicon = getIcon("goslogo.jpg")
     
-     # Make color dialog
+    
+
+
+    # Make color dialog
     colordlg = FXColorDialog.new(self, "Color Dialog")
   
     # Menubar
@@ -136,14 +142,46 @@ class MDITestWindow  < FXMainWindow
 
   # Create a new MDI child window
   def createTestWindow(x, y, w, h)
-    mdichild = FXMDIChild.new(@mdiclient, "Child", @mdiicon, @mdimenu,
-      0, x, y, w, h)
+   
+    mdichild = FXMDIChild.new(@mdiclient, "Child", @mdiicon, @mdimenu,0, x, y, w, h)
     scrollwindow = FXScrollWindow.new(mdichild, 0)
     scrollwindow.verticalScrollBar.setLine(@font.fontHeight)
-    btn = FXButton.new(scrollwindow, TYGER,
-      :opts => LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT, :width => 600, :height => 1000)
+    btn = FXButton.new(scrollwindow, TYGER,:opts => LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT, :width => 50, :height => 50)
     btn.font = @font
     btn.backColor = FXColor::White
+
+    # Menubar appears along the top of the main window
+    menubar = FXMenuBar.new(self, LAYOUT_SIDE_TOP|LAYOUT_FILL_X)
+    
+      # Separator
+    FXHorizontalSeparator.new(self,
+      LAYOUT_SIDE_TOP|LAYOUT_FILL_X|SEPARATOR_GROOVE)
+
+    # Contents
+    contents = FXHorizontalFrame.new(self,
+      LAYOUT_SIDE_TOP|FRAME_NONE|LAYOUT_FILL_X|LAYOUT_FILL_Y|PACK_UNIFORM_WIDTH)
+
+ # Switcher
+    @tabbook = FXTabBook.new(contents,:opts => LAYOUT_FILL_X|LAYOUT_FILL_Y|LAYOUT_RIGHT)
+  
+    # First item is a list
+    @tab1 = FXTabItem.new(@tabbook, "&Simple List", nil)
+    listframe = FXHorizontalFrame.new(@tabbook, FRAME_THICK|FRAME_RAISED)
+    simplelist = FXList.new(listframe, :opts => LIST_EXTENDEDSELECT|LAYOUT_FILL_X|LAYOUT_FILL_Y)
+    simplelist.appendItem("First Entry")
+    simplelist.appendItem("Second Entry")
+    simplelist.appendItem("Third Entry")
+    simplelist.appendItem("Fourth Entry")
+
+    
+#    TabBookWindow.new(mdichild);
+    #     # Contents
+#    frame = FXHorizontalFrame.new(mdichild,
+#    LAYOUT_SIDE_TOP|LAYOUT_FILL_X|LAYOUT_FILL_Y, :padding => 0, :hSpacing => 0, :vSpacing => 0)
+##
+##     # Tab book with switchable panels
+#    panels = TabBook.new(frame, mdichild)
+
     mdichild
   end
   
