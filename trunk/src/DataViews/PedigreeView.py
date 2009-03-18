@@ -575,6 +575,9 @@ class PedigreeView(PageView.PersonNavView):
               <toolitem action="Forward"/>  
               <toolitem action="HomePerson"/>
             </placeholder>
+            <placeholder name="CommonEdit">
+              <toolitem action="FamilySearch"/>
+            </placeholder>
           </toolbar>
         </ui>'''
 
@@ -593,7 +596,18 @@ class PedigreeView(PageView.PersonNavView):
         """
 
         PageView.PersonNavView.define_actions(self)
-
+        
+        self.familysearch_action = gtk.ActionGroup(self.title + '/FamilySearch')
+        self.familysearch_action.add_actions([
+            ('FamilySearch', 'gramps-parents-open', _('FamilySearch'), 
+                None , _("Connect to the New Family Search API"), 
+                self.display_fstree),
+            ])
+        self._add_action_group(self.familysearch_action)
+        
+    def display_fstree(self):
+        return
+        
     def build_tree(self):
         """
         This is called by the parent class when the view becomes visible. Since
