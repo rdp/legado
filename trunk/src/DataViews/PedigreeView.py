@@ -605,8 +605,13 @@ class PedigreeView(PageView.PersonNavView):
             ])
         self._add_action_group(self.familysearch_action)
         
-    def display_fstree(self):
-        return
+    def display_fstree(self,obj):
+        window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        window.set_size_request(200, 100)
+        window.set_title("GTK Menu Test")
+        window.connect("delete_event", lambda w,e: gtk.main_quit())
+        return(True);
+        
         
     def build_tree(self):
         """
