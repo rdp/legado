@@ -20,39 +20,38 @@ class EntryExample:
     def __init__(self):
         # create a new window
         window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        window.set_size_request(200, 100)
+        window.set_size_request(200, 200)
         window.set_title("GTK Entry")
         window.connect("delete_event", lambda w,e: gtk.main_quit())
 
         vbox = gtk.VBox(True, 0)
         window.add(vbox)
         vbox.show()
-
-        frame = gtk.Frame()
-        label = gtk.Label("This is a Normal label")
-        frame.add(label)
-        
+#
+        userIdLabel = gtk.Label("User ID")
          
         userId = gtk.Entry()
         userId.set_max_length(50)
         userId.connect("activate", self.enter_callback, userId)
-        userId.set_text("hello")
-        userId.insert_text(" world", len(userId.get_text()))
-        userId.select_region(0, len(userId.get_text()))
-        
-        frame.add(userId)
-        vbox.pack_start(frame, True, True, 0)
+        userId.set_text("user14")
+#        userId.insert_text(" world", len(userId.get_text()))
+#        userId.select_region(0, len(userId.get_text()))
         userId.show()
         
-#        entry = gtk.Entry()
-#        entry.set_max_length(50)
-#        entry.connect("activate", self.enter_callback, entry)
-#        entry.set_text("hello")
-#        entry.insert_text(" world", len(entry.get_text()))
-#        entry.select_region(0, len(entry.get_text()))
-#        entry.set_visibility(False)
-#        vbox.pack_start(entry, True, True, 0)
-#        entry.show()
+        vbox.pack_start(userIdLabel, True, True, 0)
+        vbox.add(userId)
+        
+        passwordLabel = gtk.Label("Password")
+        vbox.pack_start(passwordLabel,True,True,0)
+        
+        
+        password = gtk.Entry()
+        password.set_max_length(50)
+        password.connect("activate", self.enter_callback, password)
+        password.set_text("1234")
+        password.set_visibility(False)
+        vbox.pack_start(password, True, True, 0)
+        password.show()
 
         hbox = gtk.HBox(False, 0)
         vbox.add(hbox)
