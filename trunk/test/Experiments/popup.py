@@ -7,9 +7,9 @@ pygtk.require('2.0')
 import gtk
 
 class EntryExample:
-    def enter_callback(self, widget, entry):
-        entry_text = entry.get_text()
-        print "Entry contents: %s\n" % entry_text
+    def enter_callback(self,userId,password):
+        
+        print userId
 
     def entry_toggle_editable(self, checkbutton, entry):
         entry.set_editable(checkbutton.get_active())
@@ -47,7 +47,7 @@ class EntryExample:
         
         password = gtk.Entry()
         password.set_max_length(50)
-        password.connect("activate", self.enter_callback, password)
+        password.connect("activate", self.enter_callback(userId,password))
         password.set_text("1234")
         password.set_visibility(False)
         vbox.pack_start(password, True, True, 0)
@@ -57,20 +57,9 @@ class EntryExample:
         vbox.add(hbox)
         hbox.show()
                                   
-#        check = gtk.CheckButton("Editable")
-#        hbox.pack_start(check, True, True, 0)
-#        check.connect("toggled", self.entry_toggle_editable, entry)
-#        check.set_active(True)
-#        check.show()
-#    
-#        check = gtk.CheckButton("Visible")
-#        hbox.pack_start(check, True, True, 0)
-#        check.connect("toggled", self.entry_toggle_visibility, entry)
-#        check.set_active(True)
-#        check.show()
                                    
         button = gtk.Button("Login")
-        button.connect("clicked", lambda w: gtk.main_quit())
+        button.connect("clicked", self.enter_callback)
         vbox.pack_start(button, True, True, 0)
         button.set_flags(gtk.CAN_DEFAULT)
         button.grab_default()

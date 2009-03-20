@@ -606,11 +606,17 @@ class PedigreeView(PageView.PersonNavView):
         self._add_action_group(self.familysearch_action)
         
     def display_fstree(self,obj):
-        window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        window.set_size_request(200, 100)
-        window.set_title("GTK Menu Test")
-        window.connect("delete_event", lambda w,e: gtk.main_quit())
-        return(True);
+        from BasicUtils.gtkforms import * 
+        opts = options()\
+                .add('userid', label="Login Name", value= "api-user-1033")\
+                .add('password', label="Password", value= "104c")\
+                .add('remember', label="Remember", value= True)
+                #.add('password', label="Password", value= "*")\                
+        create_gtk_dialog(opts).run()
+        print ("pippo=\t\t" + str(opts.userid))    
+        print ("pluto=\t\t" + str(opts.password))    
+        print ("paperino=\t"+ str(opts.remember))
+
         
         
     def build_tree(self):
