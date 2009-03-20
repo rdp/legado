@@ -1,6 +1,7 @@
 
 
-def login(self):
+
+def login():
     import httplib, urllib
     conn = httplib.HTTPConnection("www.dev.usys.org")
     key = "WCQY-7J1Q-GKVV-7DNM-SQ5M-9Q5H-JX3H-CMJK"
@@ -14,15 +15,30 @@ def login(self):
     print response.read()
     print response.msg
 
+def identity():
+    import httplib, urllib
+    conn = httplib.HTTPConnection("www.dev.usys.org")
+    sessionId="USYSDAE8276CC3F214379F2058A439ECECB2.ptap009-034"
+    
+    uri = "/familytree/v1/person/me?sessionId="+sessionId
+    print uri
+    conn.request("GET",uri)
+    r1 = conn.getresponse()
+    print r1.status, r1.reason
+    print r1.read()
+    conn.close()
 
 
+login()
+resp = "<?xml version='1.0' encoding='UTF-8'?><identity xmlns='http://api.familysearch.org/identity/v1' xmlns:fsapi-v1='http://api.familysearch.org/v1 version="1.3.20090210.3423" statusMessage="OK" statusCode="200"><session id="USYSB61BB4B154BCAE70D98E286283DD76E9.ptap009-034" /></identity>"
 
-import httplib, urllib
-conn = httplib.HTTPConnection("www.dev.usys.org")
-sessionId="USYS5B2BDAA51DFD2B7F05E49483E627E313.ptap009-034"
-params = urllib.urlencode({'agent': "legado", 'sessionId': sessionId})
 
-f = urllib.urlopen("http://www.google.com")
+#if __name__ == "__main__":
+#    login()
+
+#params = urllib.urlencode({'agent': "legado", 'sessionId': sessionId})
+
+#f = urllib.urlopen("http://www.google.com")
 #print f.read()
 
 
@@ -66,5 +82,5 @@ f = urllib.urlopen("http://www.google.com")
 
 
 
-conn.close()
+
 
