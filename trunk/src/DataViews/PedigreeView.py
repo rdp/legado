@@ -613,10 +613,17 @@ class PedigreeView(PageView.PersonNavView):
                 .add('remember', label="Remember", value= True)
                 #.add('password', label="Password", value= "*")\                
         create_gtk_dialog(opts).run()
-        print ("pippo=\t\t" + str(opts.userid))    
-        print ("pluto=\t\t" + str(opts.password))    
-        print ("paperino=\t"+ str(opts.remember))
+        username = str(opts.userid)
+        password = str(opts.password)
+        print ("username=\t\t" + username)    
+        print ("password=\t\t" + password)    
+        print ("remember=\t"+ str(opts.remember))
+        
+        from FamilySearch import apifunctions
+        FSwebservice = apifunctions.FamilySearch()
 
+        FSwebservice.login(username, password)
+        print FSwebservice.getRootInfo()
         
         
     def build_tree(self):

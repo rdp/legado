@@ -22,3 +22,6 @@ def weather_for_zip(zip_code):
         'forecasts': forecasts,
         'title': dom.getElementsByTagName('title')[0].firstChild.data
     }
+    
+from pprint import pprint
+pprint(weather_for_zip(84602))

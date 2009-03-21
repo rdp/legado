@@ -12,8 +12,9 @@ def login():
     conn.request("POST", "/identity/v1/login",params,headers)
     response = conn.getresponse()
     #print response.status, response.reason
-    print response.read()
-    print response.msg
+    msg =  response.read()
+#    print msg
+    return str(msg)
 
 def identity():
     import httplib, urllib
@@ -29,8 +30,11 @@ def identity():
     conn.close()
 
 
-login()
-resp = "<?xml version='1.0' encoding='UTF-8'?><identity xmlns='http://api.familysearch.org/identity/v1' xmlns:fsapi-v1='http://api.familysearch.org/v1 version="1.3.20090210.3423" statusMessage="OK" statusCode="200"><session id="USYSB61BB4B154BCAE70D98E286283DD76E9.ptap009-034" /></identity>"
+msg = login()
+
+
+
+#resp = "<?xml version='1.0' encoding='UTF-8'?><identity xmlns='http://api.familysearch.org/identity/v1' xmlns:fsapi-v1='http://api.familysearch.org/v1 version="1.3.20090210.3423" statusMessage="OK" statusCode="200"><session id="USYSB61BB4B154BCAE70D98E286283DD76E9.ptap009-034" /></identity>"
 
 
 #if __name__ == "__main__":

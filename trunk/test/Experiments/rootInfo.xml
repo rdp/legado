@@ -1,0 +1,55 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<familytree xmlns="http://api.familysearch.org/familytree/v1" xmlns:fsapi-v1="http://api.familysearch.org/v1" version="1.4.20090210.3423" statusMessage="OK" statusCode="200">
+<persons>
+<person version="1235768208000" requestedId="me" modified="2009-02-27T13:56:48-07:00" id="KW3B-F5N">
+<information>
+<alternateIds>
+<id>KW3B-F5N</id>
+</alternateIds>
+<gender>Male</gender>
+<living>true</living>
+</information>
+<assertions>
+<name type="Name" version="1235768037552" submitter="MMMM-MMD" modified="2009-02-27T13:53:57.552-07:00" modifiable="false" id="aWZzLWZ0LnAuS1czQi1GNU46NDAwMDAyOW8yWlY5ODE3dmEzb0I0MDAw" disputing="false" contributor="MMMM-MMD">
+<forms>
+<form>
+<fullText>API User 1033</fullText>
+<pieces>
+<piece type="Given">
+<predelimiters></predelimiters>
+<value>API</value>
+<postdelimiters> </postdelimiters>
+</piece>
+<piece type="Given">
+<predelimiters></predelimiters><value>User</value><postdelimiters> </postdelimiters>
+</piece>
+<piece type="Family"><predelimiters></predelimiters><value>1033</value><postdelimiters></postdelimiters></piece>
+</pieces>
+</form>
+</forms>
+</name>
+<name type="Name" version="1235768037552" submitter="MMMM-MMD" modified="2009-02-27T13:53:57.552-07:00" modifiable="false" id="aWZzLWZ0LnAuS1czQi1GNU46NDAwMDAyOW8yWlY5ODE3dmEzb0FjMDAw" disputing="false" contributor="MMMM-MMD">
+<forms><form><fullText>API User 1033</fullText>
+<pieces>
+<piece type="Given"><predelimiters></predelimiters><value>API</value><postdelimiters> </postdelimiters>
+</piece>
+<piece type="Given"><predelimiters></predelimiters><value>User</value><postdelimiters> </postdelimiters>
+</piece>
+<piece type="Family"><predelimiters></predelimiters><value>1033</value><postdelimiters></postdelimiters>
+</piece>
+</pieces></form>
+</forms>
+</name>
+<gender version="1235768037552" submitter="MMMM-MMD" modified="2009-02-27T13:53:57.552-07:00" modifiable="false" id="aWZzLWZ0LnAuS1czQi1GNU46NDAwMDAyOW8yWlY5ODE3dmEzb0I4MDAw" disputing="false" contributor="MMMM-MMD">
+<value>Male</value>
+</gender>
+<event type="Birth" scope="person" version="1235768037552" submitter="MMMM-MMD" modified="2009-02-27T13:53:57.552-07:00" modifiable="false" id="aWZzLWZ0LnAuS1czQi1GNU46NDAwMDAyOW8yWlY5ODE3dmEzb0JGMDAw" disputing="false" contributor="MMMM-MMD">
+<date><original>25 Jun 1950</original><normalized>25 June 1950</normalized><astro><earliest>2433458</earliest><latest>2433458</latest></astro>
+</date>
+<place><normalized placeId="27">Utah, United States</normalized><original>Utah</original>
+</place>
+</event>
+</assertions>
+</person>
+</persons>
+</familytree>
