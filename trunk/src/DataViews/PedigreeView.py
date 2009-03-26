@@ -134,7 +134,8 @@ class PersonBoxWidget_cairo( gtk.DrawingArea, _PersonWidget_base):
         self.connect("realize", self.realize)
         self.text = ""
         if self.person:
-            self.text = self.fh.format_person(self.person,self.maxlines,True)
+            self.text = self.fh.format_fs_person(self.person,self.maxlines,True)
+#            self.text = self.fh.format_person(self.person,self.maxlines,True)
             if alive and self.person.get_gender() == gen.lib.Person.MALE:
                 self.bgcolor = (185/256.0, 207/256.0, 231/256.0)
                 self.bordercolor = (32/256.0, 74/256.0, 135/256.0)
@@ -386,6 +387,62 @@ class FormattingHelper:
                     text = place_title
         return text
 
+    def format_fs_person( self, person, line_count, use_markup=False):
+        if not person:
+            return ""
+#        if use_markup:
+#            if person.handle in self._markup_cache:
+#                if line_count in self._markup_cache[person.handle]:
+#                    return self._markup_cache[person.handle][line_count]
+#            name = escape(name_displayer.display(person))
+#        else:
+#            if person.handle in self._text_cache:
+#                if line_count in self._text_cache[person.handle]:
+#                    return self._text_cache[person.handle][line_count]
+        name = name_displayer.display(person)
+        text = name
+        if line_count >= 3:
+            birth = ReportUtils.get_birth_or_fallback(self.dbstate.db, person)
+            if birth and use_markup and birth.get_type() != gen.lib.EventType.BIRTH:
+                bdate  = "<i>%s</i>" % escape(DateHandler.get_date(birth))
+                bplace = "<i>%s</i>" % escape(self.get_place_name(birth.get_place_handle()))
+            elif birth and use_markup:
+                bdate  = escape(DateHandler.get_date(birth))
+                bplace = escape(self.get_place_name(birth.get_place_handle()))
+            elif birth:
+                bdate  = DateHandler.get_date(birth)
+                bplace = self.get_place_name(birth.get_place_handle())
+            else:
+                bdate = ""
+                bplace = ""
+            death = ReportUtils.get_death_or_fallback(self.dbstate.db, person)
+            if death and use_markup and death.get_type() != gen.lib.EventType.DEATH:
+                ddate  = "<i>%s</i>" % escape(DateHandler.get_date(death))
+                dplace = "<i>%s</i>" % escape(self.get_place_name(death.get_place_handle()))
+            elif death and use_markup:
+                ddate  = escape(DateHandler.get_date(death))
+                dplace = escape(self.get_place_name(death.get_place_handle()))
+            elif death:
+                ddate  = DateHandler.get_date(death)
+                dplace = self.get_place_name(death.get_place_handle())
+            else:
+                ddate = ""
+                dplace = ""
+            
+            if line_count < 5:
+                text = "%s\n* %s\n+ %s" % (name,bdate,ddate)
+            else:
+                text = "%s\n* %s\n  %s\n+ %s\n  %s" % (name,bdate,bplace,ddate,dplace)
+#        if use_markup:
+#            if not person.handle in self._markup_cache:
+#                self._markup_cache[person.handle] = {}
+#            self._markup_cache[person.handle][line_count] = text
+#        else:
+#            if not person.handle in self._text_cache:
+#                self._text_cache[person.handle] = {}
+#            self._text_cache[person.handle][line_count] = text
+        return text
+    
     def format_person( self, person, line_count, use_markup=False):
         if not person:
             return ""
@@ -620,10 +677,12 @@ class PedigreeView(PageView.PersonNavView):
         print ("remember=\t"+ str(opts.remember))
         
         from FamilySearch import apifunctions
-        FSwebservice = apifunctions.FamilySearch()
+        self.FSwebservice = apifunctions.FamilySearch()
 
-        FSwebservice.login(username, password)
-        print FSwebservice.getRootInfo()
+        if self.FSwebservice.login(username, password):
+            root =  self.FSwebservice.getRoot()
+            self.rebuild_fstrees(root)
+            
         
         
     def build_tree(self):
@@ -701,6 +760,173 @@ class PedigreeView(PageView.PersonNavView):
         else:
             self.notebook.set_current_page(self.force_size-2)
 
+
+
+
+    def rebuild_fstrees(self,root):
+        person = root
+#        if person_handle:
+#            person = self.dbstate.db.get_person_from_handle( person_handle)
+
+        self.dirty = False
+
+        if self.tree_style == 1:
+            # format of the definition is:
+            # ((each box of the pedigree has a node here),
+            #  ((person data), (connection line), (marriage data)),
+            #  ((person box position and size),(parent relation box),(marriage data)),
+            #   ((or for another design),((fater relation box),(mother relation box)),(marriage data)))
+            pos_2 =(((0,3,3,3),((1,0,3),(1,6,3)),(3,3,2,3)),
+                    ((2,0,3,3),None,None),
+                    ((2,6,3,3),None,None))
+            pos_3 =(((0,4,3,5),((1,1,3),(1,9,3)),(3,5,2,3)),
+                    ((2,1,3,3),((3,0,1),(3,4,1)),(5,1,2,3)),
+                    ((2,9,3,3),((3,8,1),(3,12,1)),(5,9,2,3)),
+                    ((4,0,3,1),None,None),
+                    ((4,4,3,1),None,None),
+                    ((4,8,3,1),None,None),
+                    ((4,12,3,1),None,None))
+            pos_4 =(((0, 5,3,5),((1,2,3),(1,10,3)),(3, 6,2,3)),
+                    ((2, 2,3,3),((3,1,1),(3,5,1)),(5, 3,2,1)),
+                    ((2,10,3,3),((3,9,1),(3,13,1)),(5,11,2,1)),
+                    ((4, 1,3,1),((5,0,1),(5,2,1)),(7,1,2,1)),
+                    ((4, 5,3,1),((5,4,1),(5,6,1)),(7,5,2,1)),
+                    ((4, 9,3,1),((5,8,1),(5,10,1)),(7,9,2,1)),
+                    ((4,13,3,1),((5,12,1),(5,14,1)),(7,13,2,1)),
+                    ((6, 0,3,1),None,None),
+                    ((6, 2,3,1),None,None),
+                    ((6, 4,3,1),None,None),
+                    ((6, 6,3,1),None,None),
+                    ((6, 8,3,1),None,None),
+                    ((6,10,3,1),None,None),
+                    ((6,12,3,1),None,None),
+                    ((6,14,3,1),None,None),)
+            pos_5 =(((0,10,3,11),((1,5,5),(1,21,5)),(3,13,2,5)),
+                    ((2, 5,3,5),((3,2,3),(3,10,3)),(5, 6,2,3)),
+                    ((2,21,3,5),((3,18,3),(3,26,3)),(5,22,2,3)),
+                    ((4, 2,3,3),((5,1,1),(5,5,1)),(7,3,2,1)),
+                    ((4,10,3,3),((5,9,1),(5,13,1)),(7,11,2,1)),
+                    ((4,18,3,3),((5,17,1),(5,21,1)),(7,19,2,1)),
+                    ((4,26,3,3),((5,25,1),(5,29,1)),(7,27,2,1)),
+                    ((6, 1,3,1),((7,0,1),(7,2,1)),(9,1,2,1)),
+                    ((6, 5,3,1),((7,4,1),(7,6,1)),(9,5,2,1)),
+                    ((6, 9,3,1),((7,8,1),(7,10,1)),(9,9,2,1)),
+                    ((6,13,3,1),((7,12,1),(7,14,1)),(9,13,2,1)),
+                    ((6,17,3,1),((7,16,1),(7,18,1)),(9,17,2,1)),
+                    ((6,21,3,1),((7,20,1),(7,22,1)),(9,21,2,1)),
+                    ((6,25,3,1),((7,24,1),(7,26,1)),(9,25,2,1)),
+                    ((6,29,3,1),((7,28,1),(7,30,1)),(9,29,2,1)),
+                    ((8, 0,3,1),None,None),
+                    ((8, 2,3,1),None,None),
+                    ((8, 4,3,1),None,None),
+                    ((8, 6,3,1),None,None),
+                    ((8, 8,3,1),None,None),
+                    ((8,10,3,1),None,None),
+                    ((8,12,3,1),None,None),
+                    ((8,14,3,1),None,None),
+                    ((8,16,3,1),None,None),
+                    ((8,18,3,1),None,None),
+                    ((8,20,3,1),None,None),
+                    ((8,22,3,1),None,None),
+                    ((8,24,3,1),None,None),
+                    ((8,26,3,1),None,None),
+                    ((8,28,3,1),None,None),
+                    ((8,30,3,1),None,None),)
+        elif self.tree_style == 0:
+            pos_2 =(((0,0,1,3),(1,0,3),(2,1,1,1)),
+                    ((2,0,1,1),None,None),
+                    ((2,2,1,1),None,None))
+            pos_3 =(((0,2,1,3),(1,1,5),(2,3,1,1)),
+                    ((2,0,1,3),(3,0,3),(4,1,1,1)),
+                    ((2,4,1,3),(3,4,3),(4,5,1,1)),
+                    ((4,0,1,1),None,None),
+                    ((4,2,1,1),None,None),
+                    ((4,4,1,1),None,None),
+                    ((4,6,1,1),None,None))
+            pos_4 =(((0,6,1,3),(1,3,9),(2,5,1,5)),
+                    ((2,2,1,3),(3,1,5),(4,3,1,1)),
+                    ((2,10,1,3),(3,9,5),(4,11,1,1)),
+                    ((4,0,1,3),(5,0,3),(6,1,1,1)),
+                    ((4,4,1,3),(5,4,3),(6,5,1,1)),
+                    ((4,8,1,3),(5,8,3),(6,9,1,1)),
+                    ((4,12,1,3),(5,12,3),(6,13,1,1)),
+                    ((6,0,1,1),None,None),
+                    ((6,2,1,1),None,None),
+                    ((6,4,1,1),None,None),
+                    ((6,6,1,1),None,None),
+                    ((6,8,1,1),None,None),
+                    ((6,10,1,1),None,None),
+                    ((6,12,1,1),None,None),
+                    ((6,14,1,1),None,None))
+            pos_5 =(((0,14,1,3),(1,7,17),(2,13,1,5)),
+                    ((2,6,1,3),(3,3,9),(4,5,1,5)),
+                    ((2,22,1,3),(3,19,9),(4,21,1,5)),
+                    ((4,2,1,3),(5,1,5),(6,3,1,1)),
+                    ((4,10,1,3),(5,9,5),(6,11,1,1)),
+                    ((4,18,1,3),(5,17,5),(6,19,1,1)),
+                    ((4,26,1,3),(5,25,5),(6,27,1,1)),
+                    ((6,0,1,3),(7,0,3),(8,1,1,1)),
+                    ((6,4,1,3),(7,4,3),(8,5,1,1)),
+                    ((6,8,1,3),(7,8,3),(8,9,1,1)),
+                    ((6,12,1,3),(7,12,3),(8,13,1,1)),
+                    ((6,16,1,3),(7,16,3),(8,17,1,1)),
+                    ((6,20,1,3),(7,20,3),(8,21,1,1)),
+                    ((6,24,1,3),(7,24,3),(8,25,1,1)),
+                    ((6,28,1,3),(7,28,3),(8,29,1,1)),
+                    ((8,0,1,1),None,None),
+                    ((8,2,1,1),None,None),
+                    ((8,4,1,1),None,None),
+                    ((8,6,1,1),None,None),
+                    ((8,8,1,1),None,None),
+                    ((8,10,1,1),None,None),
+                    ((8,12,1,1),None,None),
+                    ((8,14,1,1),None,None),
+                    ((8,16,1,1),None,None),
+                    ((8,18,1,1),None,None),
+                    ((8,20,1,1),None,None),
+                    ((8,22,1,1),None,None),
+                    ((8,24,1,1),None,None),
+                    ((8,26,1,1),None,None),
+                    ((8,28,1,1),None,None),
+                    ((8,30,1,1),None,None))
+
+        # Build ancestor tree only one for all different sizes
+        lst = [None]*31
+        self.find_fstree(person,0,1,lst)
+        
+        self.rebuild( self.table_2, pos_2, person, lst)
+        self.rebuild( self.table_3, pos_3, person, lst)
+        self.rebuild( self.table_4, pos_4, person, lst)
+        self.rebuild( self.table_5, pos_5, person, lst)
+
+    def find_fstree(self,person,index,depth,lst,val=0):
+            """Recursively build a list of ancestors"""
+    
+            if depth > 5 or person == None:
+                return
+
+            alive = False
+            lst[index] = (person,val,None,alive)
+    
+            
+            mrel = True
+            frel = True
+            
+            if len(person.parents_ids)>0:
+                for parentid in person.parents_ids:
+                    parent = self.FSwebservice.getPersonFromId(parentid)
+                    print parent.gender
+                    if parent.gender == 1:
+                        person.fs_fatherid = parent.fsid
+                        person.fs_father = parent
+                        father = parent
+                        self.find_fstree(father,(2*index)+1,depth+1,lst,frel)
+                    elif parent.gender == 0:
+                        person.fs_motherid = parent.fsid
+                        mother = parent
+                        self.find_fstree(mother,(2*index)+2,depth+1,lst,mrel)
+
+        
     def rebuild_trees(self,person_handle):
         person = None
         if person_handle:
@@ -836,6 +1062,141 @@ class PedigreeView(PageView.PersonNavView):
         self.rebuild( self.table_3, pos_3, person, lst)
         self.rebuild( self.table_4, pos_4, person, lst)
         self.rebuild( self.table_5, pos_5, person, lst)
+#    def rebuild_trees(self,person_handle):
+#        person = None
+#        if person_handle:
+#            person = self.dbstate.db.get_person_from_handle( person_handle)
+#
+#        self.dirty = False
+#
+#        if self.tree_style == 1:
+#            # format of the definition is:
+#            # ((each box of the pedigree has a node here),
+#            #  ((person data), (connection line), (marriage data)),
+#            #  ((person box position and size),(parent relation box),(marriage data)),
+#            #   ((or for another design),((fater relation box),(mother relation box)),(marriage data)))
+#            pos_2 =(((0,3,3,3),((1,0,3),(1,6,3)),(3,3,2,3)),
+#                    ((2,0,3,3),None,None),
+#                    ((2,6,3,3),None,None))
+#            pos_3 =(((0,4,3,5),((1,1,3),(1,9,3)),(3,5,2,3)),
+#                    ((2,1,3,3),((3,0,1),(3,4,1)),(5,1,2,3)),
+#                    ((2,9,3,3),((3,8,1),(3,12,1)),(5,9,2,3)),
+#                    ((4,0,3,1),None,None),
+#                    ((4,4,3,1),None,None),
+#                    ((4,8,3,1),None,None),
+#                    ((4,12,3,1),None,None))
+#            pos_4 =(((0, 5,3,5),((1,2,3),(1,10,3)),(3, 6,2,3)),
+#                    ((2, 2,3,3),((3,1,1),(3,5,1)),(5, 3,2,1)),
+#                    ((2,10,3,3),((3,9,1),(3,13,1)),(5,11,2,1)),
+#                    ((4, 1,3,1),((5,0,1),(5,2,1)),(7,1,2,1)),
+#                    ((4, 5,3,1),((5,4,1),(5,6,1)),(7,5,2,1)),
+#                    ((4, 9,3,1),((5,8,1),(5,10,1)),(7,9,2,1)),
+#                    ((4,13,3,1),((5,12,1),(5,14,1)),(7,13,2,1)),
+#                    ((6, 0,3,1),None,None),
+#                    ((6, 2,3,1),None,None),
+#                    ((6, 4,3,1),None,None),
+#                    ((6, 6,3,1),None,None),
+#                    ((6, 8,3,1),None,None),
+#                    ((6,10,3,1),None,None),
+#                    ((6,12,3,1),None,None),
+#                    ((6,14,3,1),None,None),)
+#            pos_5 =(((0,10,3,11),((1,5,5),(1,21,5)),(3,13,2,5)),
+#                    ((2, 5,3,5),((3,2,3),(3,10,3)),(5, 6,2,3)),
+#                    ((2,21,3,5),((3,18,3),(3,26,3)),(5,22,2,3)),
+#                    ((4, 2,3,3),((5,1,1),(5,5,1)),(7,3,2,1)),
+#                    ((4,10,3,3),((5,9,1),(5,13,1)),(7,11,2,1)),
+#                    ((4,18,3,3),((5,17,1),(5,21,1)),(7,19,2,1)),
+#                    ((4,26,3,3),((5,25,1),(5,29,1)),(7,27,2,1)),
+#                    ((6, 1,3,1),((7,0,1),(7,2,1)),(9,1,2,1)),
+#                    ((6, 5,3,1),((7,4,1),(7,6,1)),(9,5,2,1)),
+#                    ((6, 9,3,1),((7,8,1),(7,10,1)),(9,9,2,1)),
+#                    ((6,13,3,1),((7,12,1),(7,14,1)),(9,13,2,1)),
+#                    ((6,17,3,1),((7,16,1),(7,18,1)),(9,17,2,1)),
+#                    ((6,21,3,1),((7,20,1),(7,22,1)),(9,21,2,1)),
+#                    ((6,25,3,1),((7,24,1),(7,26,1)),(9,25,2,1)),
+#                    ((6,29,3,1),((7,28,1),(7,30,1)),(9,29,2,1)),
+#                    ((8, 0,3,1),None,None),
+#                    ((8, 2,3,1),None,None),
+#                    ((8, 4,3,1),None,None),
+#                    ((8, 6,3,1),None,None),
+#                    ((8, 8,3,1),None,None),
+#                    ((8,10,3,1),None,None),
+#                    ((8,12,3,1),None,None),
+#                    ((8,14,3,1),None,None),
+#                    ((8,16,3,1),None,None),
+#                    ((8,18,3,1),None,None),
+#                    ((8,20,3,1),None,None),
+#                    ((8,22,3,1),None,None),
+#                    ((8,24,3,1),None,None),
+#                    ((8,26,3,1),None,None),
+#                    ((8,28,3,1),None,None),
+#                    ((8,30,3,1),None,None),)
+#        elif self.tree_style == 0:
+#            pos_2 =(((0,0,1,3),(1,0,3),(2,1,1,1)),
+#                    ((2,0,1,1),None,None),
+#                    ((2,2,1,1),None,None))
+#            pos_3 =(((0,2,1,3),(1,1,5),(2,3,1,1)),
+#                    ((2,0,1,3),(3,0,3),(4,1,1,1)),
+#                    ((2,4,1,3),(3,4,3),(4,5,1,1)),
+#                    ((4,0,1,1),None,None),
+#                    ((4,2,1,1),None,None),
+#                    ((4,4,1,1),None,None),
+#                    ((4,6,1,1),None,None))
+#            pos_4 =(((0,6,1,3),(1,3,9),(2,5,1,5)),
+#                    ((2,2,1,3),(3,1,5),(4,3,1,1)),
+#                    ((2,10,1,3),(3,9,5),(4,11,1,1)),
+#                    ((4,0,1,3),(5,0,3),(6,1,1,1)),
+#                    ((4,4,1,3),(5,4,3),(6,5,1,1)),
+#                    ((4,8,1,3),(5,8,3),(6,9,1,1)),
+#                    ((4,12,1,3),(5,12,3),(6,13,1,1)),
+#                    ((6,0,1,1),None,None),
+#                    ((6,2,1,1),None,None),
+#                    ((6,4,1,1),None,None),
+#                    ((6,6,1,1),None,None),
+#                    ((6,8,1,1),None,None),
+#                    ((6,10,1,1),None,None),
+#                    ((6,12,1,1),None,None),
+#                    ((6,14,1,1),None,None))
+#            pos_5 =(((0,14,1,3),(1,7,17),(2,13,1,5)),
+#                    ((2,6,1,3),(3,3,9),(4,5,1,5)),
+#                    ((2,22,1,3),(3,19,9),(4,21,1,5)),
+#                    ((4,2,1,3),(5,1,5),(6,3,1,1)),
+#                    ((4,10,1,3),(5,9,5),(6,11,1,1)),
+#                    ((4,18,1,3),(5,17,5),(6,19,1,1)),
+#                    ((4,26,1,3),(5,25,5),(6,27,1,1)),
+#                    ((6,0,1,3),(7,0,3),(8,1,1,1)),
+#                    ((6,4,1,3),(7,4,3),(8,5,1,1)),
+#                    ((6,8,1,3),(7,8,3),(8,9,1,1)),
+#                    ((6,12,1,3),(7,12,3),(8,13,1,1)),
+#                    ((6,16,1,3),(7,16,3),(8,17,1,1)),
+#                    ((6,20,1,3),(7,20,3),(8,21,1,1)),
+#                    ((6,24,1,3),(7,24,3),(8,25,1,1)),
+#                    ((6,28,1,3),(7,28,3),(8,29,1,1)),
+#                    ((8,0,1,1),None,None),
+#                    ((8,2,1,1),None,None),
+#                    ((8,4,1,1),None,None),
+#                    ((8,6,1,1),None,None),
+#                    ((8,8,1,1),None,None),
+#                    ((8,10,1,1),None,None),
+#                    ((8,12,1,1),None,None),
+#                    ((8,14,1,1),None,None),
+#                    ((8,16,1,1),None,None),
+#                    ((8,18,1,1),None,None),
+#                    ((8,20,1,1),None,None),
+#                    ((8,22,1,1),None,None),
+#                    ((8,24,1,1),None,None),
+#                    ((8,26,1,1),None,None),
+#                    ((8,28,1,1),None,None),
+#                    ((8,30,1,1),None,None))
+#
+#        # Build ancestor tree only one for all different sizes
+#        lst = [None]*31
+#        self.find_tree(person,0,1,lst)
+#        
+#        self.rebuild( self.table_2, pos_2, person, lst)
+#        self.rebuild( self.table_3, pos_3, person, lst)
+#        self.rebuild( self.table_4, pos_4, person, lst)
+#        self.rebuild( self.table_5, pos_5, person, lst)
         
     def rebuild( self, table_widget, positions, active_person, lst):
 

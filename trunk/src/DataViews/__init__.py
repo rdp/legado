@@ -34,6 +34,7 @@ from PlaceView import PlaceView
 from MediaView import MediaView
 from RepositoryView import RepositoryView
 from NoteView import NoteView
+from FamilySearchView import FSPedigreeView 
 
 try:
     import Config
@@ -53,6 +54,7 @@ except:
         #MapView,
         RepositoryView,
         NoteView,
+        FSPedigreeView
         ]
 
 def get_views():

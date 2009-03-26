@@ -108,6 +108,15 @@ class Person(SourceBase, NoteBase, AttributeBase, MediaBase,
         self.gender = Person.UNKNOWN
         self.death_ref_index = -1
         self.birth_ref_index = -1
+        
+        #Family Search stuff
+        self.fsid = ""
+        self.fs_motherid = ""
+        self.fs_fatherid = ""
+        self.mother = None
+        self.father = None
+        self.parents_ids = []
+        
         if data:
             self.unserialize(data)
         
