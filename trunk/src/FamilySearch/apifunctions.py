@@ -11,15 +11,15 @@ class FamilySearch:
     agentname = "legado"
     sessionId = ""
     FS_NS = 'http://api.familysearch.org/familytree/v1'
-    
+    conn =None
     def login(self,username,password):
         uri = "/identity/v1/login"
         
-        conn = httplib.HTTPConnection(self.url)
+        self.conn = httplib.HTTPConnection(self.url)
         params = urllib.urlencode({'agent': self.agentname, 'key': self.key, 'username': username,'password': password })
         headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-        conn.request("POST", uri,params,headers)
-        response = conn.getresponse()
+        self.conn.request("POST", uri,params,headers)
+        response = self.conn.getresponse()
         msg =  response.read()
 #        print msg
         try:

@@ -54,7 +54,7 @@ class Name(SecondaryObject, PrivacyBase, SourceBase, NoteBase, DateBase):
     PTFN = 3  # patronymic first name
     FN   = 4  # first name
 
-    def __init__(self, source=None, data=None):
+    def __init__(self,source=None, data=None,firstname="",lastname=""):
         """Create a new Name instance, copying from the source if provided."""
         PrivacyBase.__init__(self, source)
         SourceBase.__init__(self, source)
@@ -83,8 +83,8 @@ class Name(SecondaryObject, PrivacyBase, SourceBase, NoteBase, DateBase):
             self.display_as = source.display_as
             self.call = source.call
         else:
-            self.first_name = ""
-            self.surname = ""
+            self.first_name = firstname
+            self.surname = lastname
             self.suffix = ""
             self.title = ""
             self.type = NameType()

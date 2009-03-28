@@ -82,7 +82,7 @@ class Person(SourceBase, NoteBase, AttributeBase, MediaBase,
     MALE    = 1
     FEMALE  = 0
     
-    def __init__(self, data=None):
+    def __init__(self,data=None,firstname="",lastname=""):
         """
         Create a new Person instance. 
         
@@ -98,7 +98,7 @@ class Person(SourceBase, NoteBase, AttributeBase, MediaBase,
         AddressBase.__init__(self)
         UrlBase.__init__(self)
         LdsOrdBase.__init__(self)
-        self.primary_name = Name()
+        self.primary_name = Name(None,None,firstname,lastname)
         self.marker = MarkerType()
         self.event_ref_list = []
         self.family_list = []

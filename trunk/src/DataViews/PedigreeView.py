@@ -122,7 +122,7 @@ class _PersonWidget_base:
 
             
 class PersonBoxWidget_cairo( gtk.DrawingArea, _PersonWidget_base):
-    def __init__(self,fh,person,alive,maxlines,image=None):
+    def __init__(self,fh,person,alive,maxlines,image=None,sync=None):
         gtk.DrawingArea.__init__(self)
         _PersonWidget_base.__init__(self,fh,person)
         self.add_events(gtk.gdk.BUTTON_PRESS_MASK)  # Required for popup menu
@@ -152,8 +152,14 @@ class PersonBoxWidget_cairo( gtk.DrawingArea, _PersonWidget_base):
                 self.bgcolor = (255/256.0, 205/256.0, 241/256.0)
                 self.bordercolor = (0,0,0)
             else:
-                self.bgcolor = (244/256.0, 220/256.0, 183/256.0)
+                self.bgcolor = (0/256.0, 220/256.0, 0/256.0)
                 self.bordercolor = (0,0,0)
+           
+            if sync !=None:
+               if sync :
+                    self.bordercolor = (0/256.0, 200/256.0, 0/256.0)
+               else:
+                    self.bordercolor = (200/256.0, 0/256.0, 0/256.0)
         else:
             self.bgcolor = (211/256.0, 215/256.0, 207/256.0)
             self.bordercolor = (0,0,0)
@@ -525,7 +531,10 @@ class PedigreeView(PageView.PersonNavView):
         self.show_images = Config.get(Config.PEDVIEW_SHOW_IMAGES) # Show photos of persons
         self.show_marriage_data = Config.get(Config.PEDVIEW_SHOW_MARRIAGE) # Hide marriage data by default
         self.format_helper = FormattingHelper( self.dbstate)
-
+        
+        self.fs_root = None
+        self.fs_famtree = None
+        
     def change_page(self):
         self.uistate.clear_filter_results()
 
@@ -634,6 +643,8 @@ class PedigreeView(PageView.PersonNavView):
             </placeholder>
             <placeholder name="CommonEdit">
               <toolitem action="FamilySearch"/>
+              <toolitem action="LocalPedigree"/>
+              <toolitem action="Synchronize"/>
             </placeholder>
           </toolbar>
         </ui>'''
@@ -658,34 +669,49 @@ class PedigreeView(PageView.PersonNavView):
         self.familysearch_action.add_actions([
             ('FamilySearch', 'gramps-parents-open', _('FamilySearch'), 
                 None , _("Connect to the New Family Search API"), 
-                self.display_fstree),
+                self.display_fstree),\
+            ('LocalPedigree', 'gramps-parents-open', _('LocalPedigree'), 
+                None , _("Render Local Pedigree"), 
+                self.build_tree),
+            ('Synchronize', 'gramps-parents-open', _('FS_Sync'), 
+                None , _("Sync with FamilySearch"), 
+                self.FS_Sync),
             ])
         self._add_action_group(self.familysearch_action)
-        
+    
+    def FS_Sync(self,obj):
+        from FamilySearch import utils
+        synclist = utils.compareTrees(self.fs_famtree,self.local_tree)
+        print synclist
+        self.rebuild_fstrees(self.fs_root,synclist)
+        return
     def display_fstree(self,obj):
-        from BasicUtils.gtkforms import * 
-        opts = options()\
-                .add('userid', label="Login Name", value= "api-user-1033")\
-                .add('password', label="Password", value= "104c")\
-                .add('remember', label="Remember", value= True)
-                #.add('password', label="Password", value= "*")\                
-        create_gtk_dialog(opts).run()
-        username = str(opts.userid)
-        password = str(opts.password)
-        print ("username=\t\t" + username)    
-        print ("password=\t\t" + password)    
-        print ("remember=\t"+ str(opts.remember))
         
-        from FamilySearch import apifunctions
-        self.FSwebservice = apifunctions.FamilySearch()
-
-        if self.FSwebservice.login(username, password):
-            root =  self.FSwebservice.getRoot()
-            self.rebuild_fstrees(root)
+        if self.fs_root==None: # check if we already got the tree
+            from BasicUtils.gtkforms import options, create_gtk_dialog
+            opts = options()\
+                    .add('userid', label="Login Name", value= "api-user-1033")\
+                    .add('password', label="Password", value= "104c")\
+                    .add('remember', label="Remember", value= True)
+                    #.add('password', label="Password", value= "*")\                
+            create_gtk_dialog(opts).run()
+            username = str(opts.userid)
+            password = str(opts.password)
+            print ("username=\t\t" + username)    
+            print ("password=\t\t" + password)    
+            print ("remember=\t"+ str(opts.remember))
             
+            from FamilySearch import apifunctions
+            self.FSwebservice = apifunctions.FamilySearch()
+    
+            if self.FSwebservice.login(username, password):
+                self.fs_root =  self.FSwebservice.getRoot()
+                self.rebuild_fstrees(self.fs_root)
+        else:
+             self.rebuild_fstrees(self.fs_root)
         
         
-    def build_tree(self):
+    def build_tree(self,obj=None):
         """
         This is called by the parent class when the view becomes visible. Since
         all handling of visibility is now in rebuild_trees, see that for more
@@ -763,7 +789,7 @@ class PedigreeView(PageView.PersonNavView):
 
 
 
-    def rebuild_fstrees(self,root):
+    def rebuild_fstrees(self,root,synclist=None):
         person = root
 #        if person_handle:
 #            person = self.dbstate.db.get_person_from_handle( person_handle)
@@ -891,13 +917,250 @@ class PedigreeView(PageView.PersonNavView):
                     ((8,30,1,1),None,None))
 
         # Build ancestor tree only one for all different sizes
-        lst = [None]*31
-        self.find_fstree(person,0,1,lst)
+        if self.fs_famtree==None:
+            self.fs_famtree = [None]*31
+            self.find_fstree(person,0,1,self.fs_famtree)
+                    
+        self.fs_rebuild( self.table_2, pos_2, person, self.fs_famtree,synclist)
+        self.fs_rebuild( self.table_3, pos_3, person, self.fs_famtree,synclist)
+        self.fs_rebuild( self.table_4, pos_4, person, self.fs_famtree,synclist)
+        self.fs_rebuild( self.table_5, pos_5, person, self.fs_famtree,synclist)
+
+    def fs_rebuild( self, table_widget, positions, active_person, lst, synclist=None):
+
+        # Purge current table content
+        for child in table_widget.get_children():
+            child.destroy()
+        table_widget.resize(1,1)
         
-        self.rebuild( self.table_2, pos_2, person, lst)
-        self.rebuild( self.table_3, pos_3, person, lst)
-        self.rebuild( self.table_4, pos_4, person, lst)
-        self.rebuild( self.table_5, pos_5, person, lst)
+        xmax = 0
+        ymax = 0
+        for i in range(0,31):
+            try:
+                # Table placement for person data
+                x = positions[i][0][0]+1
+                y = positions[i][0][1]+1
+                w = positions[i][0][2]
+                h = positions[i][0][3]
+            except IndexError:  # no position for this person defined
+                continue
+            if not lst[i]:
+                # No person -> show empty box
+                if cairo_available:
+                    pw = PersonBoxWidget_cairo( self.format_helper, None, False, 0, None);
+                else:
+                    pw = PersonBoxWidget( self.format_helper, None, False, 0, None);
+                if i > 0 and lst[((i+1)/2)-1]:
+                    fam_h = None
+                    fam = lst[((i+1)/2)-1][2]
+                    if fam:
+                        fam_h = fam.get_handle()
+                    if not self.dbstate.db.readonly:
+                        pw.connect("button-press-event", self.missing_parent_button_press_cb,lst[((i+1)/2)-1][0].get_handle(),fam_h)
+                        pw.force_mouse_over = True
+                if positions[i][0][2] > 1:
+                    table_widget.attach(pw,x,x+w,y,y+h,gtk.FILL,gtk.FILL,0,0)
+                else:
+                    table_widget.attach(pw,x,x+w,y,y+h,gtk.FILL,gtk.FILL,0,0)
+                if x+w > xmax:
+                    xmax = x+w
+                if y+h > ymax:
+                    ymax = y+h
+            else:
+                # Get foto
+                image = None
+                if self.show_images and i < ((len(positions)-1)/2) and  positions[i][0][3] > 1:
+                    media_list = lst[i][0].get_media_list()
+                    if media_list:
+                        ph = media_list[0]
+                        object_handle = ph.get_reference_handle()
+                        obj = self.dbstate.db.get_object_from_handle(object_handle)
+                        if obj:
+                            mtype = obj.get_mime_type()
+                            if mtype and mtype[0:5] == "image":
+                                image = ThumbNails.get_thumbnail_path(
+                                            Utils.media_path_full(
+                                                        self.dbstate.db,
+                                                        obj.get_path()),
+                                            rectangle=ph.get_rectangle())
+                if cairo_available:
+                    if synclist!= None:
+                        pw = PersonBoxWidget_cairo( self.format_helper, lst[i][0], lst[i][3], positions[i][0][3], image,synclist[i])
+                    else:
+                        pw = PersonBoxWidget_cairo( self.format_helper, lst[i][0], lst[i][3], positions[i][0][3], image)
+                else:
+                    pw = PersonBoxWidget( self.format_helper, lst[i][0], lst[i][3], positions[i][0][3], image);
+                if positions[i][0][3] < 7:
+                    self.tooltips.set_tip(pw, self.format_helper.format_person(lst[i][0], 11))
+
+                pw.connect("button-press-event", self.person_button_press_cb,lst[i][0].get_handle())
+                if positions[i][0][2] > 1:
+                    table_widget.attach(pw,x,x+w,y,y+h,gtk.EXPAND|gtk.FILL,gtk.EXPAND|gtk.FILL,0,0)
+                else:
+                    table_widget.attach(pw,x,x+w,y,y+h,gtk.FILL,gtk.FILL,0,0)
+                if x+w > xmax:
+                    xmax = x+w
+                if y+h > ymax:
+                    ymax = y+h
+                
+            # Connection lines
+            if positions[i][1] and len(positions[i][1]) == 2:
+                # separate boxes for father and mother
+                x = positions[i][1][0][0]+1
+                y = positions[i][1][0][1]+1
+                w = 1
+                h = positions[i][1][0][2]
+                line = gtk.DrawingArea()
+                line.set_size_request(20,-1)
+                line.connect("expose-event", self.line_expose_cb)
+                if lst[i] and lst[i][2]:
+                    line.add_events(gtk.gdk.BUTTON_PRESS_MASK)  # Required for popup menu
+                    line.connect("button-press-event", self.relation_button_press_cb,lst[i][2].get_handle())
+                line.set_data("idx", i*2+1)
+                if lst[i*2+1]:
+                    line.set_data("rela", lst[i*2+1][1])
+                table_widget.attach(line,x,x+w,y,y+h,gtk.FILL,gtk.FILL,0,0)
+                if x+w > xmax:
+                    xmax = x+w
+                if y+h > ymax:
+                    ymax = y+h
+                
+                x = positions[i][1][1][0]+1
+                y = positions[i][1][1][1]+1
+                w = 1
+                h = positions[i][1][1][2]
+                line = gtk.DrawingArea()
+                line.set_size_request(20,-1)
+                line.connect("expose-event", self.line_expose_cb)
+                if lst[i] and lst[i][2]:
+                    line.add_events(gtk.gdk.BUTTON_PRESS_MASK)  # Required for popup menu
+                    line.connect("button-press-event", self.relation_button_press_cb,lst[i][2].get_handle())
+                line.set_data("idx", i*2+2)
+                if lst[i*2+2]:
+                    line.set_data("rela", lst[i*2+2][1])
+                table_widget.attach(line,x,x+w,y,y+h,gtk.FILL,gtk.FILL,0,0)
+                if x+w > xmax:
+                    xmax = x+w
+                if y+h > ymax:
+                    ymax = y+h
+            if positions[i][1] and len(positions[i][1]) == 3:
+                # combined for father and mother
+                x = positions[i][1][0]+1
+                y = positions[i][1][1]+1
+                w = 1
+                h = positions[i][1][2]
+                line = gtk.DrawingArea()
+                line.set_size_request(20,-1)
+                line.connect("expose-event", self.tree_expose_cb)
+                if lst[i] and lst[i][2]:
+                    line.add_events(gtk.gdk.BUTTON_PRESS_MASK)  # Required for popup menu
+                    line.connect("button-press-event", self.relation_button_press_cb,lst[i][2].get_handle())
+                line.set_data("height", h)
+                if lst[i] and lst[i][2]:
+                    line.add_events(gtk.gdk.ENTER_NOTIFY_MASK)  # Required for tooltip and mouse-over
+                    line.add_events(gtk.gdk.LEAVE_NOTIFY_MASK)  # Required for tooltip and mouse-over
+                    self.tooltips.set_tip(line, self.format_helper.format_relation(lst[i][2], 11))
+                if lst[i*2+1]:
+                    line.set_data("frela", lst[i*2+1][1])
+                if lst[i*2+2]:
+                    line.set_data("mrela", lst[i*2+2][1])
+                table_widget.attach(line,x,x+w,y,y+h,gtk.FILL,gtk.FILL,0,0)
+                if x+w > xmax:
+                    xmax = x+w
+                if y+h > ymax:
+                    ymax = y+h
+            
+            # Show marriage data
+            if self.show_marriage_data and positions[i][2]:
+                if lst[i] and lst[i][2]:
+                    text = self.format_helper.format_relation( lst[i][2], positions[i][2][3])
+                else:
+                    text = " "
+                label = gtk.Label(text)
+                label.set_justify(gtk.JUSTIFY_LEFT)
+                label.set_line_wrap(True)
+                label.set_alignment(0.1,0.5)
+                x = positions[i][2][0]+1
+                y = positions[i][2][1]+1
+                w = positions[i][2][2]
+                h = positions[i][2][3]
+                table_widget.attach(label,x,x+w,y,y+h,gtk.FILL,gtk.FILL,0,0)
+        
+        # Add navigation arrows
+        if lst[0]:
+            #l = gtk.Button("‚óÄ")
+            l=gtk.Button()
+            l.add(gtk.Arrow(gtk.ARROW_LEFT, gtk.SHADOW_IN))
+            childlist = find_children(self.dbstate.db,lst[0][0])
+            if childlist:
+                l.connect("clicked",self.on_show_child_menu)
+                self.tooltips.set_tip(l, _("Jump to child..."))
+            else:
+                l.set_sensitive(False)
+            ymid = int(math.floor(ymax/2))
+            table_widget.attach(l,0,1,ymid,ymid+1,0,0,0,0)
+            #l = gtk.Button("‚ñ∂")
+            l = gtk.Button()
+            l.add(gtk.Arrow(gtk.ARROW_RIGHT, gtk.SHADOW_IN))
+            if lst[1]:
+                l.connect("clicked",self.on_childmenu_changed,lst[1][0].handle)
+                self.tooltips.set_tip(l, _("Jump to father"))
+            else:
+                l.set_sensitive(False)
+            ymid = int(math.floor(ymax/4))
+            table_widget.attach(l,xmax,xmax+1,ymid-1,ymid+2,0,0,0,0)
+            l = gtk.Button()
+            l.add(gtk.Arrow(gtk.ARROW_RIGHT, gtk.SHADOW_IN))
+            if lst[2]:
+                l.connect("clicked",self.on_childmenu_changed,lst[2][0].handle)
+                self.tooltips.set_tip(l, _("Jump to mother"))
+            else:
+                l.set_sensitive(False)
+            ymid = int(math.floor(ymax/4*3))
+            table_widget.attach(l,xmax,xmax+1,ymid-1,ymid+2,0,0,0,0)
+        
+        # add dummy widgets into the corners of the table to allow the pedigree to be centered
+        l = gtk.Label("")
+        table_widget.attach(l,0,1,0,1,gtk.EXPAND|gtk.FILL,gtk.EXPAND|gtk.FILL,0,0)
+        l = gtk.Label("")
+        table_widget.attach(l,xmax,xmax+1,ymax,ymax+1,gtk.EXPAND|gtk.FILL,gtk.EXPAND|gtk.FILL,0,0)
+
+        debug = False
+        if debug:
+            used_cells = {}
+            xmax = 0
+            ymax = 0
+            # iterate table to see which cells are used.
+            for c in table_widget.get_children():
+                l=table_widget.child_get_property(c,"left-attach")
+                r=table_widget.child_get_property(c,"right-attach")
+                t=table_widget.child_get_property(c,"top-attach")
+                b=table_widget.child_get_property(c,"bottom-attach")
+                for x in range(l,r):
+                    for y in range(t,b):
+                        try:
+                            used_cells[x][y] = True;
+                        except KeyError:
+                            used_cells[x] = {}
+                            used_cells[x][y] = True;
+                        if y > ymax:
+                            ymax = y
+                    if x > xmax:
+                        xmax = x
+            for x in range(0,xmax+1):
+                for y in range(0,ymax+1):
+                    try:
+                        tmp = used_cells[x][y]
+                    except KeyError:
+                        # fill unused cells
+                        label=gtk.Label("%d,%d"%(x,y))
+                        frame = gtk.ScrolledWindow(None,None)
+                        frame.set_shadow_type(gtk.SHADOW_NONE)
+                        frame.set_policy(gtk.POLICY_NEVER,gtk.POLICY_NEVER)
+                        frame.add_with_viewport(label)
+                        table_widget.attach(frame,x,x+1,y,y+1,gtk.FILL,gtk.FILL,0,0)
+        table_widget.show_all()
+
 
     def find_fstree(self,person,index,depth,lst,val=0):
             """Recursively build a list of ancestors"""
@@ -1057,6 +1320,8 @@ class PedigreeView(PageView.PersonNavView):
         # Build ancestor tree only one for all different sizes
         lst = [None]*31
         self.find_tree(person,0,1,lst)
+        
+        self.local_tree = lst
         
         self.rebuild( self.table_2, pos_2, person, lst)
         self.rebuild( self.table_3, pos_3, person, lst)
