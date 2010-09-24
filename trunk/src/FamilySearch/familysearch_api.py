@@ -45,10 +45,10 @@ class FamilySearchAPI:
         self.user = parse_current_user(json_output)
         return self.user
     
-    def get_pedigree(self,id=None): #returns by default the user's pedigree
+    def get_pedigree(self,id=None,ancestors=1): #returns by default the user's pedigree
         if id is None:
             id = self.user.id
-        endpoint = "/familytree/v2/pedigree/%s?dataFormat=application/json&sessionId="%id+self.session_id
+        endpoint = "/familytree/v2/pedigree/%s?dataFormat=application/json&sessionId=%s&ancestors=%s"%(id,self.session_id,ancestors)
         json_output = self.get_endpoint(endpoint)
         pedigree = parse_familytree(json_output)
         return pedigree

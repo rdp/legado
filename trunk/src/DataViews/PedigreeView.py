@@ -691,7 +691,7 @@ class PedigreeView(PageView.PersonNavView):
             from BasicUtils.gtkforms import options, create_gtk_dialog
             opts = options()\
                     .add('userid', label="Login Name", value= "api-user-1033")\
-                    .add('password', label="Password", value= "104c")\
+                    .add('password', label="Password", value= "*")\
                     .add('remember', label="Remember", value= True)
                     #.add('password', label="Password", value= "*")\                
             create_gtk_dialog(opts).run()
@@ -701,11 +701,19 @@ class PedigreeView(PageView.PersonNavView):
             print ("password=\t\t" + password)    
             print ("remember=\t"+ str(opts.remember))
             
-            from FamilySearch import apifunctions
-            self.FSwebservice = apifunctions.FamilySearch()
+            
+            url = "www.dev.usys.org"
+            key = "WCQY-7J1Q-GKVV-7DNM-SQ5M-9Q5H-JX3H-CMJK"
+            agentname = "legado"
+            from FamilySearch import familysearch_api
+            from FamilySearch.familysearch_gramps import *
+            
+            self.fsapi = familysearch_api.FamilySearchAPI(url,key,agentname)
     
-            if self.FSwebservice.login(username, password):
-                self.fs_root =  self.FSwebservice.getRoot()
+            if self.fsapi.login(username, password):
+                fsuser =  self.fsapi.get_user()
+                self.fs_root = fs_person_to_gramps(fsuser)
+                print self.fs_root
                 self.rebuild_fstrees(self.fs_root)
         else:
              self.rebuild_fstrees(self.fs_root)
@@ -919,7 +927,9 @@ class PedigreeView(PageView.PersonNavView):
         # Build ancestor tree only one for all different sizes
         if self.fs_famtree==None:
             self.fs_famtree = [None]*31
-            self.find_fstree(person,0,1,self.fs_famtree)
+            from FamilySearch import familysearch_api_test
+#            self.find_fstree(person,0,1,self.fs_famtree)
+            familysearch_api_test.build_fstree(self.fsapi,self.fs_famtree)
                     
         self.fs_rebuild( self.table_2, pos_2, person, self.fs_famtree,synclist)
         self.fs_rebuild( self.table_3, pos_3, person, self.fs_famtree,synclist)

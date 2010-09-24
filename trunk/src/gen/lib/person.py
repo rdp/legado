@@ -822,3 +822,6 @@ class Person(SourceBase, NoteBase, AttributeBase, MediaBase,
         @type person_ref_list: list
         """
         self.person_ref_list = person_ref_list
+    
+#    def __repr__(self):
+#        return self.fsid

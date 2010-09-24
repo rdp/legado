@@ -1213,7 +1213,7 @@ class Statusbar(gtk.HBox):
         
         if ralign:
             label = new_bar.get_children()[0].get_children()[0]
-            label.set_alignment(xalign=1.0, yalign=0.5)        
+#            label.set_alignment(xalign=1.0, yalign=0.5)        
         
         new_bar_id = self._get_next_id()
         self._bars[new_bar_id] = new_bar

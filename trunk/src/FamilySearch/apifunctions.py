@@ -1,6 +1,5 @@
 import httplib, urllib
 from xml.dom import minidom
-from elementtree.ElementTree import XML
 from gen.lib.person import Person
 from gen.lib.name import Name
 

@@ -34,7 +34,7 @@ from PlaceView import PlaceView
 from MediaView import MediaView
 from RepositoryView import RepositoryView
 from NoteView import NoteView
-from FamilySearchView import FSPedigreeView 
+#from FamilySearchView import FSPedigreeView 
 
 try:
     import Config
